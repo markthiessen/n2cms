@@ -312,17 +312,27 @@ namespace N2.Web
 
 		public static Url AppendSelection(this Url url, ContentItem item)
 		{
-			url = url.AppendQuery(SelectionUtility.SelectedQueryKey, item.Path);
-			
 			if (item.ID != 0)
-				url = url.AppendQuery(PathData.ItemQueryKey, item.ID);
-			else if (item.VersionOf.ID != 0)
-				url = url.AppendQuery(PathData.ItemQueryKey, item.VersionOf.ID);
-
+				// most published pages & parts
+				return url.AppendQuery(SelectionUtility.SelectedQueryKey, item.Path)
+					.AppendQuery(PathData.ItemQueryKey, item.ID);
+			
 			if (item.VersionOf.HasValue)
-				url = url.AppendQuery("versionIndex", item.VersionIndex);
+				// versions of published pages and parts
+				return url.AppendQuery(SelectionUtility.SelectedQueryKey, item.VersionOf.Path)
+					.AppendQuery(PathData.VersionIndexQueryKey, item.VersionIndex);
 	
-			return url;
+			if (!item.IsPage)
+			{
+				var page = N2.Find.ClosestPage(item);
+				if (page != null)
+					// new parts
+					return url.AppendQuery(SelectionUtility.SelectedQueryKey, page.Path)
+						.AppendQuery(PathData.VersionIndexQueryKey, page.VersionIndex)
+						.AppendQuery(PathData.VersionKeyQueryKey, item.GetVersionKey());
+			}
+
+			return url.AppendQuery(SelectionUtility.SelectedQueryKey, item.Path);
 		}
 
 		internal static HttpContextBase GetHttpContextBase(this HttpContext httpContext)
@@ -338,9 +348,12 @@ namespace N2.Web
 			return context.GetHttpContextBase().GetEngine();
 		}
 
-		internal static IEngine GetEngine(this HttpContextBase context)
+		internal static IEngine GetEngine(this HttpContextBase context, IEngine engine = null)
 		{
-			var engine = context.Items["N2.Engine"] as IEngine;
+			if (engine != null)
+				return engine;
+
+			engine = context.Items["N2.Engine"] as IEngine;
 			if (engine == null)
 				context.Items["N2.Engine"] = engine = N2.Context.Current;
 			return engine;

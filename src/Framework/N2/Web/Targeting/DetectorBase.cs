@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace N2.Web.Targeting
 {
@@ -17,6 +18,17 @@ namespace N2.Web.Targeting
 		int IComparable<DetectorBase>.CompareTo(DetectorBase other)
 		{
 			return Name.CompareTo(other.Name);
+		}
+
+		public virtual DetectorDescription Description
+		{
+			get { return new DetectorDescription { Title = Regex.Replace(Name, "([a-z](?=[A-Z])|[A-Z](?=[A-Z][a-z]))", "$1 ").TrimEnd(), IconClass = "n2-icon-screenshot" }; }
+		}
+
+		public class DetectorDescription
+		{
+			public string Title { get; set; }
+			public string IconClass { get; set; }
 		}
 	}
 }

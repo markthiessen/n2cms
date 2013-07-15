@@ -38,16 +38,56 @@ function ManagementCtrl($scope, $window, $timeout, $interpolate, Context, Conten
 	$scope.Security = Security;
 
 	$scope.appendPreviewOptions = function (url) {
-		if (!$scope.Context.Organize && url != "Empty.aspx")
+		if (url == "Empty.aspx")
 			return url;
+
+		for (var key in $scope.Context.PreviewQueries) {
+			url = $scope.appendQuery(url, key, $scope.Context.PreviewQueries[key]);
+		}
+
+		return url;
+	}
+
+	$scope.setPreviewQuery = function (key, value) {
+		if (value)
+			$scope.Context.PreviewQueries[key] = value;
 		else
-			return url + (url.indexOf("?") >= 0 ? "&" : "?") + "edit=drag";
+			delete $scope.Context.PreviewQueries[key];
+	}
+	
+	$scope.appendQuery = function(url, key, value)
+	{
+		if (!url) return url;
+
+		var hashIndex = url.indexOf("#");
+		if (hashIndex >= 0)
+			return $scope.appendQuery(url.substr(0, hashIndex), key, value) + url.substr(hashIndex);
+
+		var keyValue = key + (value ? ("=" + value) : "");
+
+		var re = new RegExp("([?|&])" + key + "=.*?(&|$)", "i");
+		if (url.match(re))
+			return url.replace(re, '$1' + keyValue + '$2');
+		else
+			return url + (url.indexOf("?") < 0 ? "?" : "&") + keyValue
+	}
+
+	$scope.appendSelection = function (url, appendVersionIndex) {
+		var ctx = $scope.Context;
+		if (!ctx.CurrentItem)
+			return url;
+		url = $scope.appendQuery(url, ctx.Paths.SelectedQueryKey + "=" + ctx.CurrentItem.Path + "&" + ctx.Paths.ItemQueryKey + "=" + ctx.CurrentItem.ID);
+		if (appendVersionIndex)
+			url += "&versionIndex=" + ctx.CurrentItem.VersionIndex;
+		return url;
 	}
 
 	$scope.previewUrl = function (url) {
 		console.log("Previewing ", url, "->", $scope.appendPreviewOptions(url));
 		if (window.frames.preview)
 			window.frames.preview.window.location = $scope.appendPreviewOptions(url) || "Empty.aspx";
+		else
+			console.log("no frame");
 	}
 
 	decorate(FrameContext, "refresh", function (ctx) {
@@ -85,10 +125,10 @@ function ManagementCtrl($scope, $window, $timeout, $interpolate, Context, Conten
 		Partials: {
 			Management: "App/Partials/Loading.html"
 		},
-		Organize: organizeMatch && organizeMatch[1] == "Organize"
+		PreviewQueries: {}
 	}
 
-	function translateNavigationRecursive(node) {
+	function translateMenuRecursive(node) {
 		var translation = node.Current && node.Current.Name && Translate(node.Current.Name);
 		if (translation) {
 			if (translation.text) node.Current.Title = translation.text;
@@ -96,23 +136,27 @@ function ManagementCtrl($scope, $window, $timeout, $interpolate, Context, Conten
 			if (translation.description) node.Current.Description = translation.description;
 		}
 		for (var i in node.Children) {
-			translateNavigationRecursive(node.Children[i]);
+			translateMenuRecursive(node.Children[i]);
 		}
 	}
+
+	$scope.extendSelection = function (settings) {
+		
+	};
 
 	Context.full({
 		view: viewMatch && viewMatch[1],
 		selected: selectedMatch && selectedMatch[1]
 	}, function (i) {
 		$scope.Context.Partials.Management = "App/Partials/Management.html";
-		translateNavigationRecursive(i.Interface.MainMenu);
-		translateNavigationRecursive(i.Interface.ActionMenu);
-		translateNavigationRecursive(i.Interface.ContextMenu);
+		translateMenuRecursive(i.Interface.MainMenu);
+		translateMenuRecursive(i.Interface.ActionMenu);
+		translateMenuRecursive(i.Interface.ContextMenu);
 		angular.extend($scope.Context, i.Interface);
 		angular.extend($scope.Context, i.Context);
-		console.log("Loaded interface", $scope.Context);
-		console.log("CurrentItem", $scope.Context.CurrentItem);
-		$scope.previewUrl(i.Interface.Paths.PreviewUrl);
+		console.log("Loaded interface", $scope.Context, "   CurrentItem", $scope.Context.CurrentItem);
+		if (organizeMatch && organizeMatch[1] == "Organize")
+			$scope.Context.Paths.PreviewUrl = $scope.appendQuery($scope.Context.Paths.PreviewUrl, "edit", "drag");
 	});
 
 	$scope.select = function (nodeOrPath, versionIndex, keepFlags, forceContextRefresh, preventReload) {
@@ -140,7 +184,7 @@ function ManagementCtrl($scope, $window, $timeout, $interpolate, Context, Conten
 			$scope.Context.AppliesTo = node.Current.PreviewUrl;
 
 			$timeout(function () {
-				Context.get({ selected: node.Current.Path, view: $scope.Context.Paths.ViewPreference, versionIndex: versionIndex }, function (ctx) {
+				Context.get({ selected: node.Current.Path, view: $scope.Context.User.ViewPreference, versionIndex: versionIndex }, function (ctx) {
 					if (keepFlags)
 						angular.extend($scope.Context, ctx, { Flags: $scope.Context.Flags });
 					else
@@ -186,31 +230,23 @@ function ManagementCtrl($scope, $window, $timeout, $interpolate, Context, Conten
 
 	$scope.isDisplayable = function (item) {
 		if ($scope.Context.CurrentItem && !Security.permissions.is(item.Current.RequiredPermission, $scope.Context.CurrentItem.MaximumPermission)) {
-			//console.log("unauthorized", item);
 			return false;
 		}
+		if (item.Current.DisplayedBy && item.Current.HiddenBy) {
+			return $scope.isFlagged(item.Current.DisplayedBy)
+				&& !$scope.isFlagged(item.Current.HiddenBy);
+		}
 		if (item.Current.HiddenBy) {
-			//console.log(item.Current.Title, "hidden by", item.Current.HiddenBy, item);
 			return !$scope.isFlagged(item.Current.HiddenBy);
 		}
 		if (item.Current.DisplayedBy) {
-			//console.log(item.Current.Title, "displayed by", item.Current.DisplayedBy, $scope.isFlagged(item.Current.DisplayedBy), item);
 			return $scope.isFlagged(item.Current.DisplayedBy);
 		}
 		return true;
 	};
 }
 
-function MainMenuCtrl($scope) {
-	$scope.$watch("Context.MainMenu", function (mainMenu) {
-		$scope.menu = mainMenu;
-	});
-	$scope.$watch("Context.User", function (user) {
-		$scope.user = user;
-	});
-}
-
-function NavigationCtrl($scope, Content, ContextMenuFactory, Eventually) {
+function NavigationCtrl($rootScope, $scope, Content, ContextMenuFactory, Eventually) {
 	$scope.search = {
 		execute: function (searchQuery) {
 			if (!searchQuery)
@@ -241,13 +277,6 @@ function NavigationCtrl($scope, Content, ContextMenuFactory, Eventually) {
 			$scope.$digest();
 		}, 400);
 	});
-
-	$scope.$watch("Context.User.PreferredView", function (view) {
-		$scope.viewPreference = view == 0
-			? "draft"
-			: "published";
-	});
-
 	$scope.ContextMenu = new ContextMenuFactory($scope);
 }
 
@@ -263,6 +292,11 @@ function TrunkCtrl($scope, $rootScope, Content, SortHelperFactory) {
 			$scope.Context.SelectedNode = findSelectedRecursive($scope.Context.Content, ctx.CurrentItem.Path);
 		else
 			$scope.Context.SelectedNode = null;
+
+		//if (ctx.Organize)
+		//	$scope.setPreviewQuery("edit", "drag");
+		//else
+		//	$scope.setPreviewQuery("edit", null);
 	});
 
 	$scope.toggle = function (node) {
@@ -328,7 +362,7 @@ function BranchCtrl($scope, Content, SortHelperFactory) {
 	$scope.sort = new SortHelperFactory($scope, Content);
 }
 
-function PageActionBarCtrl($scope, $rootScope, Security) {
+function MenuCtrl($rootScope, $scope, Security) {
 	$scope.$watch("Context.ActionMenu.Children", function (children) {
 		var lefties = [];
 		var righties = [];
@@ -340,6 +374,20 @@ function PageActionBarCtrl($scope, $rootScope, Security) {
 		}
 		$scope.primaryNavigation = lefties;
 		$scope.secondaryNavigation = righties;
+	});
+
+	$scope.setViewPreference = function (viewPreference) {
+		$scope.Context.User.ViewPreference = viewPreference;
+	};
+	$scope.$watch("Context.User.ViewPreference", function (viewPreference, previousPreference) {
+		$scope.setPreviewQuery("view", viewPreference);
+		var existingIndex = $scope.Context.Flags.indexOf("View" + previousPreference);
+		if (existingIndex >= 0)
+			$scope.Context.Flags.splice(existingIndex, 1);
+		$scope.Context.Flags.push("View" + viewPreference);
+	});
+	$rootScope.$on("contextchanged", function (scope, ctx) {
+		ctx.Flags.push("View" + ctx.User.ViewPreference)
 	});
 }
 
@@ -457,17 +505,26 @@ function PageScheduleCtrl($scope, Content) {
 	};
 }
 
-function FrameActionCtrl($scope, $rootScope, FrameManipulator) {
+function FrameActionCtrl($scope, $rootScope, $timeout, FrameManipulator) {
 	$scope.$parent.manipulator = FrameManipulator;
 	$rootScope.$on("contextchanged", function (scope, e) {
 		$scope.$parent.action = null;
 		$scope.$parent.item.Children = [];
+		var extraFlags = FrameManipulator.getFlags();
+		for (var i in extraFlags) {
+			$scope.Context.Flags.push(extraFlags[i]);
+		}
+
 		if ($scope.isFlagged("Management")) {
 			var actions = $scope.manipulator.getFrameActions();
 			if (actions && actions.length) {
 				$scope.$parent.manipulator.hideToolbar();
+
 				$scope.$parent.action = actions[0];
-				$scope.$parent.item.Children = actions[0].Children;
+				if (actions.length == 1)
+					$scope.$parent.item.Children = actions[0].Children;
+				else
+					$scope.$parent.item.Children = actions;
 			}
 		}
 	});
