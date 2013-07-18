@@ -96,7 +96,7 @@
 				return;
 
 			node.Loading = true;
-			res.children({ selected: node.Current.Path }, function (data) {
+			res.children({ selected: node.Current.Path, cacheBuster: new Date().getTime() }, function (data) {
 				node.Children = data.Children;
 				delete node.Loading;
 				node.IsPaged = data.IsPaged;
