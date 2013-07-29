@@ -66,6 +66,8 @@
     <script type="text/javascript">
 
         $(function () {
+            $('.permission0 input').addClass('defaultChecked');//customized - all read are default
+            
             var filter = { type: 'all', text: '' };
             var rows = [];
             $('#rolesTable tbody.overrides tr').each(function () {
