@@ -17,7 +17,8 @@
 		<div>
 		</div>
 		<div class="container">
-			<asp:Login ID="Login1" TitleText="<h1>Log in</h1>" runat="server" meta:resourceKey="Login1" CssClass="login"
+		    <h2>Logging out...</h2>
+			<asp:Login Visible="False" ID="Login1" TitleText="<h1>Log in</h1>" runat="server" meta:resourceKey="Login1" CssClass="login"
 				MembershipProvider="AspNetSqlMembershipProvider" OnAuthenticate="Login1_Authenticate" >
 				<LoginButtonStyle CssClass="btn btn-primary" />
 				<LabelStyle CssClass="login-label" />
@@ -25,13 +26,24 @@
 			</asp:Login>
 		</div>
 		<script type="text/javascript">
-			try {
-				if (window.top.location.pathname !== window.location.pathname) {
-					window.top.location = window.location;
-				}
-			} catch (e) {
-				window.top.location = window.location;
-			}
+		    //hack to redirect to main login page and bust out of frame..
+		    try {
+		        var logoutPageUrl = '<%= Page.ResolveUrl("~/Account/LogOff") %>';
+
+		        //if (window != top)
+		        //    top.location.href = logoutPageUrl;
+		        window.top.location = logoutPageUrl;
+		        window.location = logoutPageUrl;
+		    } catch (e) {
+		        window.top.location = logoutPageUrl;
+		    }
+		    //try {
+		    //    if (window.top.location.pathname !== window.location.pathname) {
+		    //        window.top.location = window.location;
+		    //    }
+		    //} catch (e) {
+		    //    window.top.location = window.location;
+		    //}
 		</script>
 	</form>
 </body>
