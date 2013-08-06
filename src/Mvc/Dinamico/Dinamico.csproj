@@ -15,8 +15,6 @@
     <AssemblyName>Dinamico</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <MvcBuildViews>false</MvcBuildViews>
-    <UseIISExpress>false</UseIISExpress>
-    <UseIISExpress>false</UseIISExpress>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <UpgradeBackupLocation>
@@ -273,7 +271,7 @@
     <Content Include="Dinamico\Themes\Default\Views\StartPage\NotFound.cshtml" />
     <Content Include="Dinamico\Themes\Default\Views\Test\Index.cshtml" />
     <Content Include="Dinamico\Themes\Default\Views\Web.config" />
-    <Content Include="Dinamico\Themes\Default\Views\_ViewStart.cshtml" />
+    <Content Include="Dinamico\Themes\_ViewStart.cshtml" />
     <Content Include="Dinamico\Themes\Roadwork\Views\Shared\LayoutPartials\Footer.cshtml" />
     <Content Include="Dinamico\Themes\Roadwork\Views\Shared\LayoutPartials\Logotype.cshtml" />
     <Content Include="Dinamico\Themes\Roadwork\Views\Shared\LayoutPartials\SubNavigation.cshtml" />
