@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Diagnose.aspx.cs" Inherits="N2.Edit.Install.Diagnose" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Diagnose.aspx.cs" Inherits="N2.Edit.Install.Diagnose" %>
 <%@ Import Namespace="System.Collections.Generic"%>
 <%@ Import Namespace="System.Reflection"%>
 <%@ Import Namespace="N2.Web"%>
@@ -15,6 +15,7 @@
         input{vertical-align:middle;margin-bottom:5px;}
         ul,li{margin-top:0;margin-bottom:0;}
         textarea{height:55px;width:70%;background-color:#FFA07A;border:none;font-size:11px}
+		th {text-align:right; vertical-align:top; background-color:#eee; border:solid 1px #fff; }
         .t {font-size:.8em; width:100%;}
         .t thead td{ font-weight:bold; background-color:#eee;}
 		.t th h2 { margin:0; padding:.1em; background-color:#ccc; width:auto;}
@@ -23,10 +24,10 @@
         .EnabledFalse { color:#999; }
         .IsDefinedFalse { color:Red; }
         a { color:Blue; }
-        .expandable { padding:1px; }
+        .expandable { padding:1px; position:relative; }
 			.expandable .opened { display:none; }
 			.expandable .opener { display:block; }
-			.expandable:hover .opened { display:block; }
+			.expandable:hover .opened { display:block; position:absolute; background:#fff; z-index:9999; }
 			.expandable:hover .opener { display:none; }
     </style>
 	<script type="text/javascript">
@@ -53,12 +54,12 @@
 					<tr><th>Connection</th><td><asp:Label ID="lblDbConnection" runat="server" /></td></tr>
 					<tr><th>Root item</th><td><asp:Label ID="lblRootNode" runat="server" /></td></tr>
 					<tr><th>Start page</th><td><asp:Label ID="lblStartNode" runat="server" /></td></tr>
-					<tr><th>N2 version (recorded)</th><td><%= Status.RecordedAssemblyVersion %> (<%= Status.RecordedFileVersion %>)</td></tr>
-					<tr><th>N2 file version (recorded)</th><td><%= Status.RecordedFileVersion %> (<%= Status.RecordedFileVersion %>)</td></tr>
-					<tr><th rowspan="<%= Status.RecordedFeatures.Length %>">Installed features (recorded)</th>
+					<tr><th>N2 version (recorded)</th><td><%= typeof(N2.Content).Assembly.GetName().Version %> (<%= Status.RecordedAssemblyVersion %>)</td></tr>
+					<tr><th rowspan="<%= 1 + Status.RecordedFeatures.Length %>">Installed features (recorded)</th>
 						<% foreach (string feature in Status.RecordedFeatures){ %>
 						<td><%= feature %></td>
 						<% } %>
+						<td></td>
 					</tr>
 					<tr><th>Needs <a href="Upgrade.aspx">upgrade</a></th><td><%= Status.NeedsUpgrade %></td></tr>
 					<tr><th>Needs <a href="Rebase.aspx">rebase</a></th><td><%= Status.NeedsRebase %></td></tr>
@@ -106,7 +107,7 @@
 				<tbody>
 					<tr><th colspan="2"><h2>Security</h2></th></tr>
 					<tr><th>Membership</th><td><%= System.Web.Security.Membership.Provider %></td></tr>
-					<tr><th>Roles</th><td><%= System.Web.Security.Roles.Provider %></td></tr>
+					<tr><th>Roles</th><td><% try { Response.Write(System.Web.Security.Roles.Provider.ToString()); } catch(Exception ex) { Response.Write(ex.Message); } %></td></tr>
 					<tr><th>Profile</th><td><%= System.Web.Profile.ProfileManager.Provider %></td></tr>
 					<tr><th>User type</th><td><%= User %> <%= User.Identity %></td></tr>
 					<tr><th>User</th><td><%= User.Identity.Name %></td></tr>

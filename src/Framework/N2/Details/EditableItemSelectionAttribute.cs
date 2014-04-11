@@ -1,4 +1,4 @@
-﻿using N2.Definitions;
+using N2.Definitions;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,8 +13,8 @@ namespace N2.Details
     /// Allows selecting zero or more items of a specific type from an exapandable check box list.
     /// </summary>
     /// <example>
-    /// 	[EditableItemSelection]
-    /// 	public virtual IEnumerable&gt;ContentItem&lt; Links { get; set; }
+    ///     [EditableItemSelection]
+    ///     public virtual IEnumerable&gt;ContentItem&lt; Links { get; set; }
     /// </example>
     [AttributeUsage(AttributeTargets.Property)]
     public class EditableItemSelectionAttribute : EditableDropDownAttribute
@@ -28,7 +28,7 @@ namespace N2.Details
         {
             LinkedType = typeof(ContentItem);
             ExcludedType = typeof(ISystemNode);
-            SearchTreshold = 20;
+            SearchTreshold = 10;
             Include = EditableItemSelectionFilter.Pages;
         }
 
@@ -68,8 +68,8 @@ namespace N2.Details
             if (LinkedType != null && LinkedType != typeof(ContentItem))
                 query &= Parameter.TypeEqual(LinkedType);
 
-			if (ExcludedType != null)
-				query &= Parameter.TypeNotIn(Engine.Definitions.GetDefinitions().Where(d => ExcludedType.IsAssignableFrom(d.ItemType)).Select(d => d.Discriminator).ToArray());
+            if (ExcludedType != null)
+                query &= Parameter.TypeNotIn(Engine.Definitions.GetDefinitions().Where(d => ExcludedType.IsAssignableFrom(d.ItemType)).Select(d => d.Discriminator).ToArray());
 
             if (!Is(EditableItemSelectionFilter.Pages))
                 query &= Parameter.IsNotNull("ZoneName");

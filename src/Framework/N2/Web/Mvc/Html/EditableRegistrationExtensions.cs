@@ -1,11 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Web.UI.WebControls;
 using N2.Definitions.Runtime;
 using N2.Details;
 using N2.Integrity;
 using N2.Definitions;
-using System.Web.UI.WebControls;
 
 namespace N2.Web.Mvc.Html
 {
@@ -54,16 +55,16 @@ namespace N2.Web.Mvc.Html
 				.Configure(e => e.EnumType = enumType);
 		}
 
-		public static EditableBuilder<EditableDropDownAttribute> DropDown(this IContentRegistration registration, string name, params System.Web.UI.WebControls.ListItem[] listItems)
+		public static EditableBuilder<EditableDropDownAttribute> DropDown(this IContentRegistration registration, string name, params ListItem[] listItems)
 		{
-			return registration.RegisterEditable<EditableDropDownAttribute>(new CustomDropDownAttribute() { Name = name, Title = name })
+			return registration.RegisterEditable<EditableDropDownAttribute>(new CustomDropDownAttribute { Name = name, Title = name })
 				.Configure(e => ((CustomDropDownAttribute)e).ListItems = listItems);
 		}
 
 		class CustomDropDownAttribute : EditableDropDownAttribute
 		{
-			public System.Web.UI.WebControls.ListItem[] ListItems { get; set; }
-			protected override System.Web.UI.WebControls.ListItem[] GetListItems()
+			public ListItem[] ListItems { get; set; }
+			protected override ListItem[] GetListItems()
 			{
 				return ListItems;
 			}
@@ -71,7 +72,7 @@ namespace N2.Web.Mvc.Html
 
 		public static EditableBuilder<EditableMultipleItemSelectionAttribute> MultipleItemSelection(this IContentRegistration registration, string name, Type linkedType, Type excludedType = null)
 		{
-			return registration.RegisterEditable<EditableMultipleItemSelectionAttribute>(new EditableMultipleItemSelectionAttribute
+			return registration.RegisterEditable(new EditableMultipleItemSelectionAttribute
 			{
 				LinkedType = linkedType,
 				ExcludedType = excludedType ?? typeof(ISystemNode),
@@ -86,7 +87,7 @@ namespace N2.Web.Mvc.Html
 			{
 				Title = name,
 				Name = name,
-				CustomItemsGetter = () => getContentItems().Select(ci => new ListItem(ci.Title, ci.ID.ToString()))
+				CustomItemsGetter = () => getContentItems().Select(ci => new ListItem(ci.Title, ci.ID.ToString(CultureInfo.InvariantCulture)))
 			});
 		}
 
@@ -128,6 +129,11 @@ namespace N2.Web.Mvc.Html
 		public static EditableBuilder<EditableImageSizeAttribute> ImageSize(this IContentRegistration registration, string name, string title = null)
 		{
 			return registration.RegisterEditable<EditableImageSizeAttribute>(name, title);
+		}
+
+		public static EditableBuilder<EditableImageUploadAttribute> ImageUpload(this IContentRegistration registration, string name, string title = null)
+		{
+			return registration.RegisterEditable<EditableImageUploadAttribute>(name, title);
 		}
 
 		public static EditableBuilder<EditableItemAttribute> Item(this IContentRegistration registration, string name, string title = null)
@@ -179,32 +185,42 @@ namespace N2.Web.Mvc.Html
 
 		public static Builder<RestrictParentsAttribute> RestrictParents(this IContentRegistration registration, AllowedTypes allowedTypes)
 		{
-			return registration.RegisterRefiner<RestrictParentsAttribute>(new RestrictParentsAttribute(allowedTypes));
+			return registration.RegisterRefiner(new RestrictParentsAttribute(allowedTypes));
 		}
 
 		public static Builder<RestrictParentsAttribute> RestrictParents(this IContentRegistration registration, params Type[] allowedParentTypes)
 		{
-			return registration.RegisterRefiner<RestrictParentsAttribute>(new RestrictParentsAttribute(allowedParentTypes));
+			return registration.RegisterRefiner(new RestrictParentsAttribute(allowedParentTypes));
 		}
 
 		public static Builder<RestrictParentsAttribute> RestrictParents(this IContentRegistration registration, params string[] allowedParentTemplateKeys)
 		{
-			return registration.RegisterRefiner<RestrictParentsAttribute>(new RestrictParentsAttribute(AllowedTypes.All) { TemplateKeys = allowedParentTemplateKeys });
+			return registration.RegisterRefiner(new RestrictParentsAttribute(AllowedTypes.All) { TemplateKeys = allowedParentTemplateKeys });
 		}
 
 		public static Builder<RestrictChildrenAttribute> RestrictChildren(this IContentRegistration registration, AllowedTypes allowedTypes)
 		{
-			return registration.RegisterRefiner<RestrictChildrenAttribute>(new RestrictChildrenAttribute(allowedTypes));
+			return registration.RegisterRefiner(new RestrictChildrenAttribute(allowedTypes));
 		}
 
 		public static Builder<RestrictChildrenAttribute> RestrictChildren(this IContentRegistration registration, params Type[] allowedChildTypes)
 		{
-			return registration.RegisterRefiner<RestrictChildrenAttribute>(new RestrictChildrenAttribute(allowedChildTypes));
+			return registration.RegisterRefiner(new RestrictChildrenAttribute(allowedChildTypes));
 		}
 
 		public static Builder<RestrictChildrenAttribute> RestrictChildren(this IContentRegistration registration, params string[] allowedChildTemplateKeys)
 		{
-			return registration.RegisterRefiner<RestrictChildrenAttribute>(new RestrictChildrenAttribute(AllowedTypes.All) { TemplateNames = allowedChildTemplateKeys });
+			return registration.RegisterRefiner(new RestrictChildrenAttribute(AllowedTypes.All) { TemplateNames = allowedChildTemplateKeys });
+		}
+
+		public static Builder<AllowedZonesAttribute> AllowedZones(this IContentRegistration registration, params string[] zoneNames)
+		{
+			return registration.RegisterRefiner(new AllowedZonesAttribute(zoneNames));
+		}
+
+		public static Builder<AllowedZonesAttribute> AllowedZones(this IContentRegistration registration, AllowedZones allowedIn, params string[] zoneNames)
+		{
+			return registration.RegisterRefiner(new AllowedZonesAttribute(allowedIn) { ZoneNames = zoneNames });
 		}
 
 		public static Builder<IDefinitionRefiner> Sort(this IContentRegistration registration, SortBy sortingOrder, string expression = null)
@@ -224,7 +240,7 @@ namespace N2.Web.Mvc.Html
 
 		class AppendAttributeRefiner : IDefinitionRefiner
 		{
-			private object attribute;
+			private readonly object attribute;
 
 			public AppendAttributeRefiner(object attribute)
 			{
@@ -236,9 +252,12 @@ namespace N2.Web.Mvc.Html
 				get { return 0; }
 			}
 
-			public void Refine(ItemDefinition currentDefinition, System.Collections.Generic.IList<ItemDefinition> allDefinitions)
+			public void Refine(ItemDefinition currentDefinition, IList<ItemDefinition> allDefinitions)
 			{
-				currentDefinition.Attributes.Add(attribute);
+				lock (currentDefinition.Attributes)
+				{
+					currentDefinition.Attributes.Add(attribute);
+				}
 			}
 
 			public int CompareTo(ISortableRefiner other)

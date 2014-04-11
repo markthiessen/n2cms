@@ -24,6 +24,8 @@
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -85,6 +87,7 @@
     <Compile Include="Addons\Wiki\Renderers\InternalLinkRenderer.cs" />
     <Compile Include="Addons\Wiki\Renderers\LineRenderer.cs" />
     <Compile Include="Addons\Wiki\Renderers\ListRenderer.cs" />
+    <Compile Include="Addons\Wiki\Renderers\NewLineRenderer.cs" />
     <Compile Include="Addons\Wiki\Renderers\OrderedListItemRenderer.cs" />
     <Compile Include="Addons\Wiki\Renderers\TemplateRenderer.cs" />
     <Compile Include="Addons\Wiki\Renderers\TextRenderer.cs" />
@@ -318,4 +321,5 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
 </Project>

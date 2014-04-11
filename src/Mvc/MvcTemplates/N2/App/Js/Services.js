@@ -1,38 +1,43 @@
 ﻿(function (module) {
+	module.factory('LocationKeeper', function ($rootScope, $routeParams, $location, Content) {
+		$rootScope.$on("contextchanged", function (s, ctx) {
+			$location.search(Content.applySelection({}, ctx.CurrentItem))
+				.replace();
+		});
+		return {};
+	});
 
 	module.factory('Eventually', function ($timeout) {
 		return (function () {
 			// clears the previous action if a new event is triggered before the timeout
 			var timer = 0;
-			var timers = {}
-			return function (callback, ms, onWorkCancelled, parallelWorkGroup) {
+			var timers = {};
+			return function(callback, ms, onWorkCancelled, parallelWorkGroup) {
 				if (!!parallelWorkGroup) {
 					if (timers[parallelWorkGroup]) {
-						clearTimeout(timers[parallelWorkGroup]);
+						$timeout.cancel(timers[parallelWorkGroup]);
 						onWorkCancelled();
 					}
-					timers[parallelWorkGroup] = setTimeout(function () {
+					timers[parallelWorkGroup] = $timeout(function() {
 						timers[parallelWorkGroup] = null;
 						callback();
 					}, ms);
 				} else {
-					if (timer && onWorkCancelled) {
-						onWorkCancelled();
-					}
-					clearTimeout(timer);
-					timer = setTimeout(function () {
+					timer && onWorkCancelled && onWorkCancelled();
+					timer && $timeout.cancel(timer);
+					timer = $timeout(function() {
 						timer = 0;
 						callback();
 					}, ms);
 				}
-			}
+			};
 		})();
 	});
 
 	window.frameHost = {
-		notify: function () {
+		notify: function() {
 		}
-	}
+	};
 	module.factory('FrameManipulator', function () {
 		var frameManipulator = {
 			host: window.frameHost,
@@ -84,6 +89,11 @@
 	module.factory('Content', function ($resource) {
 		var res = $resource('Api/Content.ashx/:target', { target: '' }, {
 			'children': { method: 'GET', params: { target: 'children' } },
+			'branch': { method: 'GET', params: { target: 'branch' } },
+			'tree': { method: 'GET', params: { target: 'tree' } },
+			'ancestors': { method: 'GET', params: { target: 'ancestors' } },
+			'node': { method: 'GET', params: { target: 'node' } },
+			'parent': { method: 'GET', params: { target: 'parent' } },
 			'search': { method: 'GET', params: { target: 'search' } },
 			'translations': { method: 'GET', params: { target: 'translations' } },
 			'versions': { method: 'GET', params: { target: 'versions' } },
@@ -96,17 +106,54 @@
 			'schedule': { method: 'POST', params: { target: 'schedule' } }
 		});
 
-		res.loadChildren = function (node, callback) {
-			if (!node)
-				return;
+		res.paths = {
+			SelectedQueryKey: "selected",
+			ItemQueryKey: "item"
+		};
 
-			node.Loading = true;
-			res.children({ selected: node.Current.Path }, function (data) {
-				node.Children = data.Children;
-				delete node.Loading;
-				node.IsPaged = data.IsPaged;
-				callback && callback(node);
-			});
+		res.applySelection = function(settings, currentItem) {
+			var path = currentItem && currentItem.Path;
+			var id = currentItem && currentItem.ID;
+
+			if (typeof currentItem == "string") {
+				path = currentItem;
+			} else if (typeof currentItem == "number") {
+				id = currentItem;
+			}
+
+			if (path || id) {
+				var selection = {};
+				selection[res.paths.SelectedQueryKey] = path;
+				selection[res.paths.ItemQueryKey] = id;
+				return angular.extend(selection, settings);
+			}
+			return settings;
+		};
+
+		res.loadChildren = function (node, callback) {
+		    if (!node)
+		        return;
+
+		    node.Loading = true;
+		    return res.children(res.applySelection({}, node.Current), function (data) {
+		        node.Children = data.Children;
+		        delete node.Loading;
+		        node.IsPaged = data.IsPaged;
+		        node.HasChildren = data.Children.length > 0;
+		        callback && callback(node);
+		    });
+		};
+
+		res.reload = function (node, callback) {
+		    if (!node)
+		        return;
+
+		    node.Loading = true;
+		    res.node(res.applySelection({ }, node.Current), function (data) {
+		        node.Current = data.Node.Current;
+		        delete node.Loading;
+		        callback && callback(node);
+		    });
 		};
 
 		res.states = {
@@ -136,6 +183,13 @@
 		var res = $resource('Api/Context.ashx/:target', { target: '' }, {
 			'interface': { method: 'GET', params: { target: 'interface' } },
 			'full': { method: 'GET', params: { target: 'full' } }
+		});
+
+		return res;
+	});
+
+	module.factory('Profile', function ($resource) {
+		var res = $resource('Api/Profile.ashx', {}, {
 		});
 
 		return res;
@@ -178,9 +232,9 @@
 	});
 
 	module.factory('ContextMenuFactory', function () {
-		return function (scope) {
+		return function(scope) {
 			var contextMenu = this;
-			contextMenu.show = function (node) {
+			contextMenu.show = function(node) {
 				scope.select(node);
 				scope.ContextMenu.node = node;
 				scope.ContextMenu.options = [];
@@ -190,25 +244,31 @@
 					scope.ContextMenu.options.push(cm.Current);
 				}
 			};
-			contextMenu.hide = function () {
+			contextMenu.hide = function() {
 				delete scope.ContextMenu.node;
 				delete scope.ContextMenu.options;
 				delete scope.ContextMenu.memory;
 				delete scope.ContextMenu.action;
 			};
-			contextMenu.cut = function (node) {
+			contextMenu.cut = function(node) {
 				contextMenu.memory = node.Current;
 				contextMenu.action = "cut";
-				
+
 			};
-			contextMenu.copy = function (node) {
+			contextMenu.copy = function(node) {
 				contextMenu.memory = node.Current;
 				contextMenu.action = "copy";
 			};
-		}
+		};
 	});
 
-	module.factory('SortHelperFactory', function (Content, Notify) {
+	module.factory('Confirm', function ($rootScope) {
+	    return function (settings) {
+	        $rootScope.$emit("confirm", settings);
+	    };
+	});
+
+	module.factory('SortHelperFactory', function ($timeout, Content, Notify, Translate, Confirm) {
 		var context = {}
 		return function (scope) {
 			function reload(ctx) {
@@ -217,26 +277,45 @@
 
 				node.HasChildren = true;
 				node.Loading = true;
-				Content.children({ selected: node.Current.Path }, function (data) {
+				Content.children(Content.applySelection({}, node.Current), function (data) {
 					node.Children = data.Children;
 					node.Expanded = true;
 					node.Loading = false;
 					if (data.IsPaged)
 						node.IsPaged = true;
 				});
+
+				scope.reloadChildren(ctx.scopes.from.node);
 			}
 			this.move = function (ctx) {
-				Content.move(ctx.paths, function () {
-					reload(ctx);
-					Notify.show({ message: "Moved " + (ctx.scopes.selected && ctx.scopes.selected.node && ctx.scopes.selected.node.Current.Title), type: "success", timeout: 3000 });
-				}, function () {
-					Notify.show({ message: "Failed moving " + (ctx.scopes.selected && ctx.scopes.selected.node && ctx.scopes.selected.node.Current.Title), type: "error" });
-				});
+			    Confirm({
+			        title: Translate("confirm.move.title"),
+			        moved: ctx.scopes.selected.node.Current,
+			        destination: ctx.scopes.to.node.Current,
+			        template: "<div class='alert alert-info' translate='confirm.move.info'>This may break inbound links</div>"
+                            + "<p><label translate='confirm.move.moved'>Moved</label><b class='ico' ng-show='settings.moved.IconClass || settings.moved.IconUrl' ng-class='settings.moved.IconClass' x-background-image='settings.moved.IconUrl'></b> {{settings.moved.Title}}<p>"
+                            + "<p><label translate='confirm.move.destination'>Destination</label><b class='ico' ng-show='settings.destination.IconClass || settings.destination.IconUrl' ng-class='settings.destination.IconClass' x-background-image='settings.destination.IconUrl'></b> {{settings.destination.Title}}<p>",
+			        confirmed: function () {
+			            Content.move(ctx.paths, function () {
+			                reload(ctx);
+			                Notify.show({ message: "Moved " + (ctx.scopes.selected && ctx.scopes.selected.node && ctx.scopes.selected.node.Current.Title), type: "success", timeout: 3000 });
+			            }, function () {
+			            	reload(ctx);
+			            	Notify.show({ message: "Failed moving " + (ctx.scopes.selected && ctx.scopes.selected.node && ctx.scopes.selected.node.Current.Title), type: "error" });
+			            });
+			            ctx.callback && ctx.callback();
+			        },
+			        cancelled: function () {
+			            scope.reloadChildren(ctx.scopes.from.node);
+			            scope.reloadChildren(ctx.scopes.to.node);
+			        }
+			    });
 			};
 			this.sort = function (ctx) {
 				Content.sort(ctx.paths, function () {
 					reload(ctx);
 					Notify.show({ message: "Sorted " + (ctx.scopes.selected && ctx.scopes.selected.node && ctx.scopes.selected.node.Current.Title), type: "success", timeout: 3000 });
+					ctx.callback && ctx.callback();
 				}, function () {
 					Notify.show({ message: "Failed sorting " + (ctx.scopes.selected && ctx.scopes.selected.node && ctx.scopes.selected.node.Current.Title), type: "error" });
 				});

@@ -32,6 +32,8 @@
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -55,7 +57,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="FiftyOne.Foundation">
-      <HintPath>..\..\packages\51Degrees.mobi.2.1.18.2\lib\NET40\FiftyOne.Foundation.dll</HintPath>
+      <HintPath>..\..\packages\51Degrees.mobi.2.1.19.4\lib\NET40\FiftyOne.Foundation.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <Private>True</Private>
@@ -64,6 +66,10 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data.SQLite, Version=1.0.90.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\System.Data.SQLite.1.0.90.0\lib\net40\System.Data.SQLite.dll</HintPath>
+    </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Abstractions" />
@@ -121,7 +127,6 @@
     <Compile Include="Templates\Items\Comment.cs" />
     <Compile Include="Templates\Items\CommentInput.cs" />
     <Compile Include="Templates\Items\CommentList.cs" />
-    <Compile Include="Templates\Items\ControlPanel.cs" />
     <Compile Include="Templates\Items\DatabaseSearch.cs" />
     <Compile Include="Templates\Items\Event.cs" />
     <Compile Include="Templates\Items\Faq.cs" />
@@ -191,13 +196,6 @@
     </Compile>
     <Compile Include="Templates\UI\Parts\CommentList.ascx.designer.cs">
       <DependentUpon>CommentList.ascx</DependentUpon>
-    </Compile>
-    <Compile Include="Templates\UI\Parts\ControlPanel.ascx.cs">
-      <DependentUpon>ControlPanel.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Templates\UI\Parts\ControlPanel.ascx.designer.cs">
-      <DependentUpon>ControlPanel.ascx</DependentUpon>
     </Compile>
     <Compile Include="Templates\UI\Parts\Comment.ascx.cs">
       <DependentUpon>Comment.ascx</DependentUpon>
@@ -756,7 +754,6 @@
     <Content Include="Templates\UI\Parts\Columns.ascx" />
     <Content Include="Templates\UI\Parts\CommentInput.ascx" />
     <Content Include="Templates\UI\Parts\CommentList.ascx" />
-    <Content Include="Templates\UI\Parts\ControlPanel.ascx" />
     <Content Include="Templates\UI\Parts\Comment.ascx" />
     <Content Include="Templates\UI\Parts\Empty.ascx" />
     <Content Include="Templates\UI\Parts\Login.ascx" />
@@ -884,4 +881,5 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
 </Project>

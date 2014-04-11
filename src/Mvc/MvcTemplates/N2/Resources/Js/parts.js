@@ -2,7 +2,7 @@
 	var isDragging = false;
 	var dialog = null;
 
-	window.n2DragDrop = function (urls, messages, context) {
+	window.n2DragDrop = function(urls, messages, context) {
 		this.urls = $.extend({
 			copy: 'copy.n2.ashx',
 			move: 'move.n2.ashx',
@@ -16,7 +16,7 @@
 		}, messages);
 		this.context = context;
 		this.init();
-	}
+	};
 
 	window.n2DragDrop.prototype = {
 
@@ -98,8 +98,8 @@
 		appendSelection: function (url, command) {
 			return url
 				+ (url.indexOf("?") >= 0 ? "&" : "?") + (n2SelectedQueryKey || "selected") + "=" + command.below
-				+ (this.context.isMasterVersion ? "" : "&versionIndex=" + this.context.versionIndex)
-				+ (!command.versionKey ? "" : "&versionKey=" + command.versionKey);
+				+ (this.context.isMasterVersion ? "" : "&n2versionIndex=" + this.context.versionIndex)
+				+ (!command.n2versionKey ? "" : "&n2versionKey=" + command.n2versionKey);
 		},
 
 		makeEditable: function () {
@@ -108,7 +108,7 @@
 				var $t = $(this);
 				var url = self.appendSelection(self.urls.editsingle, { below: $t.attr("data-path") })
 					+ "&property=" + $t.attr("data-property")
-					+ "&versionKey=" + $t.attr("data-versionKey")
+					+ "&n2versionKey=" + $t.attr("data-versionKey")
 					+ "&returnUrl=" + encodeURIComponent(window.location.pathname + window.location.search)
 					+ "&edit=drag";
 				
@@ -200,9 +200,9 @@
 				var $next = $droppable.filter(".before").next();
 				var data = {
 					ctrlKey: e.ctrlKey,
-					item: $draggable.attr("data-item"),
-					versionKey: $draggable.attr("data-versionKey"),
-					versionIndex: $draggable.attr("data-versionIndex") || n2ddcp.context.versionIndex,
+					n2item: $draggable.attr("data-item"),
+					n2versionKey: $draggable.attr("data-versionKey"),
+					n2versionIndex: $draggable.attr("data-versionIndex") || n2ddcp.context.versionIndex,
 					discriminator: $draggable.attr("data-type"),
 					template: $draggable.attr("data-template"),
 					before: ($next.attr("data-versionKey") ? "" : $next.attr("data-item")) || "", // data-item may be page+index+key when new part
@@ -264,7 +264,7 @@
 
 		process: function (command) {
 			var self = this;
-			if (command.item)
+			if (command.n2item)
 				command.action = command.ctrlKey ? "copy" : "move";
 			else
 				command.action = "create";
@@ -370,7 +370,8 @@
 	window.frameInteraction = {
 		location: "Organize",
 		ready: true,
-		getActions: function () {
+		getActions: function() {
+
 			function create(commandElement) {
 				return {
 					Title: $(commandElement).attr('title'),
@@ -383,7 +384,7 @@
 			};
 			var actions = [];
 			var idCounter = 0;
-			$('.controlPanel .plugins .control > a').not('.cpView, .cpAdminister, .cpOrganize, .complementary, .authorizedFalse').each(function () {
+			$('.controlPanel .plugins .control > a').not('.cpView, .cpAdminister, .cpOrganize, .complementary, .authorizedFalse').each(function() {
 				if (!this.id)
 					this.id = "action" + ++idCounter;
 				actions.push({ Current: create(this) });
@@ -396,13 +397,13 @@
 				Children: actions.slice(1)
 			}];
 		},
-		hideToolbar: function (force) {
+		hideToolbar: function(force) {
 			$('.controlPanel .plugins .control > a').not('.cpView, .cpAdminister, .cpOrganize, .complementary, .authorizedFalse')
 				.parent().hide();
 		},
-		execute: function(selector){
+		execute: function(selector) {
 			window.location = $(selector).attr('href');
 		}
-	}
+	};
 
 })(jQuery);
