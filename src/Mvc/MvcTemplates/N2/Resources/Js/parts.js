@@ -118,7 +118,7 @@
 					if ($(this).closest("a").length > 0)
 						$(this).click(function (e) { e.preventDefault(); e.stopPropagation(); });
 				});
-				$("<a class='editor n2-icon-pencil' href='" + url + "'></a>").appendTo(this);
+				$("<a class='editor fa fa-pencil' href='" + url + "'></a>").appendTo(this);
 			});
 		},
 		scroll: function () {
@@ -311,7 +311,7 @@
 
 		recalculate: function () {
 			var $sc = $(this.selector)
-			this.closedPos = { top: (33 - $sc.height()) + "px", left: (5 - $sc.width()) + "px" };
+			this.closedPos = { top: (33 - $sc.height()) + "px", left: (17 - $sc.width()) + "px" };
 			if (!this.isOpen()) $sc.css(this.closedPos);
 		},
 

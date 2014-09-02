@@ -2,6 +2,7 @@ using System.Configuration;
 using NHibernate.Mapping.ByCode;
 using System.Collections.Generic;
 using System.Data;
+using N2.Engine;
 
 namespace N2.Configuration
 {
@@ -10,6 +11,8 @@ namespace N2.Configuration
     /// </summary>
     public class DatabaseSection : ContentConfigurationSectionBase
     {
+		Logger<DatabaseSection> logger;
+
         /// <summary>Whether cacheing should be enabled.</summary>
         [ConfigurationProperty("caching", DefaultValue = false)]
         public bool Caching
@@ -157,13 +160,25 @@ namespace N2.Configuration
             if (Files.StorageLocation == FileStoreLocation.Database)
                 configurationKeys.Add("dbfs");
 
-            if (Search.Type == SearchIndexType.Lucene)
-                configurationKeys.Add("lucene");
+			if (!string.IsNullOrEmpty(Search.Type))
+				configurationKeys.Add(Search.Type);
 
-            if (Search.Type == SearchIndexType.RemoteServer)
-                configurationKeys.Add("remote");
+			var flavour = Flavour;
+			if (flavour == DatabaseFlavour.AutoDetect)
+			{
+				try
+				{
+					var cs = ConfigurationManager.ConnectionStrings[ConnectionStringName];
+					if (cs != null && cs.ConnectionString != null && cs.ConnectionString.Contains("XmlRepositoryPath="))
+						flavour = DatabaseFlavour.Xml;
+				}
+				catch (System.Exception ex)
+				{
+					logger.Warn(ex);
+				}
+			}
 
-            switch (Flavour)
+            switch (flavour)
             {
                 case DatabaseFlavour.MongoDB:
                     configurationKeys.Add("mongo");
@@ -173,6 +188,11 @@ namespace N2.Configuration
                     configurationKeys.Add("xml");
                     break;
             }
+
+			if ((flavour & DatabaseFlavour.NoSql) == DatabaseFlavour.NoSql)
+				configurationKeys.Add("nosql");
+			else
+				configurationKeys.Add("sql");
         }
 
     }

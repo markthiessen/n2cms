@@ -216,10 +216,21 @@ function ManagementCtrl($scope, $window, $timeout, $interpolate, $location, Cont
 
 		$scope.watchChanges("Context.User", function (user) {
 			Eventually(function () {
-				Profile.save({}, user, function(data){
+				if (user.$saved){
+					delete user.$saved;
+					return;
+				}
+
+				Profile.save({}, user, function (data) {
 				});
+
 			}, 10000);
 		}, true);
+		$scope.saveUserSettings = function () {
+			$scope.Context.User.$saved = true;
+			Profile.save({}, $scope.Context.User, function (data) {
+			});
+		}
 	});
 
 	$scope.refreshContext = function(node, versionIndex, keepFlags, callback) {
@@ -388,10 +399,12 @@ function ScopeHandler($scope, Content) {
 		this.from = true;
 		$scope.node = node;
 		$scope.Context.User.Settings.Scope = node.Current.Path;
+		$scope.saveUserSettings();
 	};
 	this.clear = function () {
 		$scope.node = $scope.Context.Content;
 		delete $scope.Context.User.Settings.Scope;
+		$scope.saveUserSettings();
 		this.from = false;
 	};
 	if ($scope.Context.User.Settings.Scope) {
@@ -460,7 +473,7 @@ function TrunkCtrl($scope, $rootScope, Content, SortHelperFactory) {
 					if (!zone)
 						continue;
 					var child = {
-						Current: { Title: zone, IconClass: "n2-icon-columns silver", MetaInformation: [] },
+						Current: { Title: zone, IconClass: "fa fa-columns silver", MetaInformation: [] },
 						HasChildren: true,
 						Children: zones[zone]
 					};
@@ -486,14 +499,14 @@ function BranchCtrl($scope, Content, Translate, SortHelperFactory) {
 	if ($scope.node.Current) {
 		var mi = $scope.node.Current.MetaInformation;
 		if (mi) {
-			if (mi.authority) $scope.tags.push({ ToolTip: Translate("branch.tags.authority", "Site: ") + (mi.authority.ToolTip || " (*)"), IconClass: "n2-icon-home", Url: "#" });
-			if (mi.hidden) $scope.tags.push({ ToolTip: Translate("branch.tags.hidden", "Hidden"), IconClass: "n2-icon-eraser", Url: "#" });
-			if (mi.language) $scope.tags.push({ ToolTip: Translate("branch.tags.language", "Language: ") + mi.language.Text, IconClass: "n2-icon-globe", Url: "#" });
-			if (mi.locked) $scope.tags.push({ ToolTip: Translate("branch.tags.locked", "Access restrictions"), IconClass: "n2-icon-lock", Url: "#" });
-			if (mi.zone) $scope.tags.push({ ToolTip: Translate("branch.tags.zone", "In zone: ") + mi.zone.Text, IconClass: "n2-icon-columns", Url: "#" });
-			if (mi.draft) $scope.tags.push({ ToolTip: Translate("branch.tags.draft", "Has draft: ") + mi.draft.ToolTip, IconClass: "n2-icon-circle-blank", Url: "#" });
-			if (mi.system) $scope.tags.push({ ToolTip: mi.system.ToolTip, IconClass: "n2-icon-qrcode", Url: "#" });
-			if ($scope.node.Current.State == Content.states.Unpublished) $scope.tags.push({ ToolTip: Translate("branch.tags.unpublished", "Unpublished"), IconClass: "n2-icon-stop", Url: "#" });
+			if (mi.authority) $scope.tags.push({ ToolTip: Translate("branch.tags.authority", "Site: ") + (mi.authority.ToolTip || " (*)"), IconClass: "fa fa-home", Url: "#" });
+			if (mi.hidden) $scope.tags.push({ ToolTip: Translate("branch.tags.hidden", "Hidden"), IconClass: "fa fa-eraser", Url: "#" });
+			if (mi.language) $scope.tags.push({ ToolTip: Translate("branch.tags.language", "Language: ") + mi.language.Text, IconClass: "fa fa-globe", Url: "#" });
+			if (mi.locked) $scope.tags.push({ ToolTip: Translate("branch.tags.locked", "Access restrictions"), IconClass: "fa fa-lock", Url: "#" });
+			if (mi.zone) $scope.tags.push({ ToolTip: Translate("branch.tags.zone", "In zone: ") + mi.zone.Text, IconClass: "fa fa-columns", Url: "#" });
+			if (mi.draft) $scope.tags.push({ ToolTip: Translate("branch.tags.draft", "Has draft: ") + mi.draft.ToolTip, IconClass: "fa fa-circle-o", Url: "#" });
+			if (mi.system) $scope.tags.push({ ToolTip: mi.system.ToolTip, IconClass: "fa fa-qrcode", Url: "#" });
+			if ($scope.node.Current.State == Content.states.Unpublished) $scope.tags.push({ ToolTip: Translate("branch.tags.unpublished", "Unpublished"), IconClass: "fa fa-stop", Url: "#" });
 		}
 	}
 }
@@ -514,6 +527,7 @@ function MenuCtrl($rootScope, $scope, Security) {
 
 	$scope.setViewPreference = function (viewPreference) {
 		$scope.Context.User.Settings.ViewPreference = viewPreference;
+		$scope.saveUserSettings();
 	};
 	$scope.$watch("Context.User.Settings.ViewPreference", function (viewPreference, previousPreference) {
 		$scope.setPreviewQuery("view", viewPreference);
@@ -553,6 +567,7 @@ function MenuNodeLastChildCtrl($scope, $timeout) {
     $scope.$on("nodeclicked", function (scope, node) {
     	replace($scope.item, node);
     	$scope.Context.User.Settings.PreferredEditAction = node.Current.Name;
+    	$scope.saveUserSettings();
     });
 }
 

@@ -18,25 +18,24 @@
  */
 #endregion
 
+using Castle.DynamicProxy;
+using N2.Collections;
+using N2.Definitions;
+using N2.Details;
+using N2.Engine;
+using N2.Persistence;
+using N2.Persistence.Proxying;
+using N2.Web;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Principal;
 using System.Text;
 using System.Web;
-using N2.Collections;
-using N2.Definitions;
-using N2.Details;
-using N2.Edit;
-using N2.Engine;
-using N2.Persistence;
-using N2.Persistence.Proxying;
-using N2.Web;
-using Castle.DynamicProxy;
-using System.Linq;
-using System.Collections;
 
 namespace N2
 {
@@ -135,12 +134,6 @@ namespace N2
 		{
 			get { return parent; }
 			set { parent = value; }
-		}
-
-		/// <summary>Gets this item's parent if available, otherwise returns previsous version's parent.</summary>
-		public virtual ContentItem SafeParent
-		{
-			get { return parent ?? ((VersionOf == null) ? null : VersionOf.Parent); }
 		}
 
 		/// <summary>Gets or sets the item's title. This is used in edit mode and probably in a custom implementation.</summary>
@@ -553,22 +546,14 @@ namespace N2
 			object o = null;
 			try
 			{
-				if (Details.ContainsKey(detailName))
-				{
-					o = Details[detailName].Value;
-					if (typeof(T).IsEnum && o != null && o.GetType() == typeof(string) && Enum.IsDefined(typeof(T), o))
-					{
-						return (T)Enum.Parse(typeof(T), (string)o); // Special case: Handle enum
-					}
-					else
-					{
-						return (T)(o == null ? null : o); // Attempt regular cast conversion
-					}
-				}
-				else
-				{
-					return defaultValue;
-				}
+			    if (!Details.ContainsKey(detailName)) return defaultValue;
+			    
+                o = Details[detailName].Value;
+			    if (typeof(T).IsEnum && o is string && Enum.IsDefined(typeof(T), o))
+			    {
+			        return (T)Enum.Parse(typeof(T), (string)o); // Special case: Handle enum
+			    }
+			    return (T)(o); // Attempt regular cast conversion
 			}
 			catch (InvalidCastException inner)
 			{
@@ -588,10 +573,10 @@ namespace N2
 		[NonInterceptable]
 		protected internal virtual void SetDetail<T>(string detailName, T value, T defaultValue)
 		{
-			if (value == null || !value.Equals(defaultValue))
+            if (!EqualityComparer<T>.Default.Equals(value, defaultValue))
 				SetDetail(detailName, value);
 			else if (Details.ContainsKey(detailName))
-				details.Remove(detailName);
+				Details.Remove(detailName);
 		}
 
 		/// <summary>Set a value into the <see cref="Details"/> bag. If a value with the same name already exists it is overwritten.</summary>
@@ -836,12 +821,12 @@ namespace N2
 		/// <param name="includeChildren">Wether this item's child items also should be cloned.</param>
 		/// <returns>The cloned item with or without cloned child items.</returns>
 		[NonInterceptable]
-		public virtual ContentItem Clone(bool includeChildren)
+		public virtual ContentItem Clone(bool includeChildren = false, bool includeIdentifier = false, bool includeParent = false)
 		{
 			ContentItem cloned = (ContentItem)Activator.CreateInstance(GetContentType(), true); //(ContentItem)MemberwiseClone(); 
 
 			CloneUnversionableFields(this, cloned);
-			CloneFields(this, cloned);
+			CloneFields(this, cloned, includeIdentifier, includeParent);
 			CloneAutoProperties(this, cloned);
 			CloneDetails(this, cloned);
 			CloneChildren(this, cloned, includeChildren);
@@ -859,7 +844,7 @@ namespace N2
 			destination.state = source.state;
 		}
 
-		static void CloneFields(ContentItem source, ContentItem destination)
+		static void CloneFields(ContentItem source, ContentItem destination, bool includeID, bool includeParent)
 		{
 			destination.title = source.title;
 			if (source.id.ToString() != source.name)
@@ -874,6 +859,11 @@ namespace N2
 			destination.urlParser = source.urlParser;
 			destination.url = null;
 			destination.zoneName = source.zoneName;
+			destination.ancestralTrail = source.ancestralTrail;
+			if (includeID)
+				destination.id = source.id;
+			if (includeParent)
+				destination.parent = source.parent;
 		}
 
 		static void CloneAutoProperties(ContentItem source, ContentItem destination)
@@ -914,14 +904,15 @@ namespace N2
 		{
 			foreach (ContentDetail detail in source.Details.Values)
 			{
+                ContentDetail clonedDetail = detail.Clone();
+                clonedDetail.EnclosingItem = destination;
+
 				if (destination.details.ContainsKey(detail.Name))
 				{
-					destination.details[detail.Name].Value = detail.Value;//.Value should behave polymorphically
+                    destination.details[detail.Name].Value = clonedDetail.Value;//.Value should behave polymorphically
 				}
 				else
 				{
-					ContentDetail clonedDetail = detail.Clone();
-					clonedDetail.EnclosingItem = destination;
 					destination.details[detail.Name] = clonedDetail;
 				}
 			}
@@ -1112,7 +1103,7 @@ namespace N2
 
 		void IUpdatable<ContentItem>.UpdateFrom(ContentItem source)
 		{
-			CloneFields(source, this);
+			CloneFields(source, this, false, false);
 			CloneDetails(source, this);
 			ClearMissingDetails(source, this);
 			CloneAutoProperties(source, this);
