@@ -70,6 +70,16 @@ namespace N2.Configuration
             set { base["theme"] = value; }
         }
 
+		/// <summary>
+		/// Configures if the edit toolbar is displayed on the bottom of the page. If false, the edit toolbar is placed at the top of the page.
+		/// </summary>
+		[ConfigurationProperty("toolbarOnBottom", DefaultValue = true)]
+		public bool IsToolbarOnBottom
+		{
+			get { return (bool)base["toolbarOnBottom"]; }
+			set { base["toolbarOnBottom"] = value; }
+		}
+
         [ConfigurationProperty("ckeditor")]
         public CkEditorElement CkEditor
         {
@@ -161,5 +171,13 @@ namespace N2.Configuration
             get { return (DocViewerElementCollection)base["docviewer"]; }
             set { base["docviewer"] = value; }
         }
-    }
+
+		/// <summary>Configuration about editor collaboration features.</summary>
+		[ConfigurationProperty("organize")]
+		public OrganizeElement Organize
+		{
+			get { return (OrganizeElement)base["organize"]; }
+			set { base["organize"] = value; }
+		}
+	}
 }

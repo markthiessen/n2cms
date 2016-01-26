@@ -8,7 +8,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head id="Head1" runat="server">
     <title>Diagnose N2</title>
-	<link href="../Resources/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+	<asp:PlaceHolder runat="server">
+		<link href="<%=  N2.Web.Url.ResolveTokens(N2.Resources.Register.BootstrapCssPath) %>" type="text/css" rel="stylesheet" />
+		<script src="<%= N2.Web.Url.ResolveTokens(N2.Resources.Register.BootstrapJsPath)  %>" type="text/javascript"></script>
+	</asp:PlaceHolder>
     <link rel="stylesheet" href="../Resources/Css/All.css" type="text/css" />
     <style type="text/css">
         label{font-weight:bold;margin:5px 10px 0 0;}
@@ -67,12 +70,12 @@
 					<tr><th>Root item</th><td><asp:Label ID="lblRootNode" runat="server" /></td></tr>
 					<tr><th>Start page</th><td><asp:Label ID="lblStartNode" runat="server" /></td></tr>
 					<tr><th>N2 version (recorded)</th><td><%= typeof(N2.Content).Assembly.GetName().Version %> (<%= Status.RecordedAssemblyVersion %>)</td></tr>
-					<tr><th rowspan="<%= 1 + Status.RecordedFeatures.Length %>">Installed features (recorded)</th>
-						<% foreach (string feature in Status.RecordedFeatures){ %>
-						<td><%= feature %></td>
-						<% } %>
-						<td></td>
-					</tr>
+					<tr><th rowspan="<%= 1 + Status.RecordedFeatures.Length %>">Installed features (recorded)</th></tr>
+					<% foreach (string feature in Status.RecordedFeatures){ %>
+					<tr><td><%= feature %></td></tr>
+					<% } %>
+					<tr><td></td></tr>
+					
 					<tr><th>Needs <a href="Upgrade.aspx">upgrade</a></th><td><%= Status.NeedsUpgrade %></td></tr>
 					<tr><th>Needs <a href="Rebase.aspx">rebase</a></th><td><%= Status.NeedsRebase %></td></tr>
 					<tr><th rowspan="<%= recentChanges.Length + 1 %>">Recent changes </th><td><asp:Label ID="lblChanges" runat="server" />
@@ -354,6 +357,21 @@
 			<% } catch (Exception ex) { %>
 			<pre><%= ex %></pre>
 			<% } %>
+
+
+			<% try { %>
+			<table class="t openable"><thead>
+				<tr><th colspan="7"><h2>Scheduler</h2></th></tr>
+				<tr><td>Name</td><td>Is executing</td><td>Enabled</td><td>Last executed</td><td>Interval</td><td>Error count</td><td>Last error</td></tr></thead>
+			<tbody>
+			<% foreach (N2.Plugin.Scheduling.ScheduledAction action in ScheduledActions) { %>
+				<tr><td><%= action.GetType().Name %></td><td><%= action.IsExecuting %></td><td><%= action.Enabled %></td><td><%= action.LastExecuted %></td><td><%= action.Interval %></td><td><%= action.ErrorCount %></td><td><%= action.LastError %></td></tr>
+			<% } %>
+			</tbody></table>
+			<% } catch (Exception ex) { %>
+			<pre><%= ex %></pre>
+			<% } %>
+
         </div>
     </form>
 </body>

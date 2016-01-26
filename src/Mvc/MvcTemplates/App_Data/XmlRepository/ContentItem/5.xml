@@ -9,9 +9,7 @@
   <detailCollections>
     <collection name="Settings">
       <detail name="Settings" typeName="System.String, mscorlib" meta="ViewPreference" encoded="True"><![CDATA[draft]]></detail>
-      <detail name="Settings" typeName="System.String, mscorlib" meta="Selected" encoded="True"><![CDATA[/start/]]></detail>
-      <detail name="Settings" typeName="System.String, mscorlib" meta="PreferredEditAction" encoded="True"><![CDATA[organize]]></detail>
-      <detail name="Settings" typeName="System.Boolean, mscorlib" meta="ShowInfo">False</detail>
+      <detail name="Settings" typeName="System.String, mscorlib" meta="Selected" encoded="True"><![CDATA[/start/test/]]></detail>
     </collection>
   </detailCollections>
   <children />
